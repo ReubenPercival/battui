@@ -78,7 +78,7 @@ sudo cp battui /usr/local/bin/
 
 ### Dependencies
 
-- Go 1.21+
+- Go 1.26+
 - Linux with `/sys/class/power_supply/`
 - Terminal with Unicode and true colour support
 

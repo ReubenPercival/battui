@@ -2,26 +2,11 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
-
-func (m model) renderContent() string {
-	if len(m.supplies) == 0 {
-		return m.renderEmpty()
-	}
-
-	switch m.activeTab {
-	case tabOverview:
-		return m.renderOverview()
-	case tabDetails:
-		return m.renderDetails()
-	case tabRaw:
-		return m.renderRaw()
-	}
-	return ""
-}
 
 func (m model) renderEmpty() string {
 	msg := lipgloss.NewStyle().
@@ -37,9 +22,13 @@ func (m model) renderEmpty() string {
 func (m model) renderOverview() string {
 	var cards []string
 	var lastWasBattery bool
+	cardWidth := max(40, m.width-6)
+	if cardWidth > 120 {
+		cardWidth = 120
+	}
 	for i, ps := range m.supplies {
 		if i > 0 && ps.IsBattery() != lastWasBattery {
-			sep := dimStyle.Render(strings.Repeat("─", max(20, m.width-8)))
+			sep := dimStyle.Render(strings.Repeat("─", max(0, cardWidth-1)))
 			cards = append(cards, " "+sep)
 		}
 		card := m.renderSupplyCard(ps, i == m.selected)
@@ -181,7 +170,7 @@ func (m model) renderSupplyCard(ps PowerSupply, selected bool) string {
 			stats = append(stats, fmt.Sprintf("→ Empty: %s", warnStyle.Render(timeToEmpty)))
 		}
 
-		if ps.IsCharging() && hasCapacity {
+		if ps.IsCharging() {
 			stats = append(stats, fmt.Sprintf("Charge: %s", chargingStyle.Render("active")))
 		}
 
@@ -268,6 +257,9 @@ func (m model) renderSupplyCard(ps PowerSupply, selected bool) string {
 
 func (m model) renderDetails() string {
 	if len(m.supplies) == 0 {
+		return m.renderEmpty()
+	}
+	if m.selected < 0 || m.selected >= len(m.supplies) {
 		return m.renderEmpty()
 	}
 	ps := m.supplies[m.selected]
@@ -436,8 +428,8 @@ func (m model) renderDetails() string {
 
 	// Wrap in a card
 	width := max(40, m.width-6)
-	if width > 100 {
-		width = 100
+	if width > 120 {
+		width = 120
 	}
 
 	return lipgloss.NewStyle().
@@ -477,6 +469,9 @@ func (m model) kvColor(key, value string, color lipgloss.Color) string {
 
 func (m model) renderRaw() string {
 	if len(m.supplies) == 0 {
+		return m.renderEmpty()
+	}
+	if m.selected < 0 || m.selected >= len(m.supplies) {
 		return m.renderEmpty()
 	}
 	ps := m.supplies[m.selected]
@@ -556,7 +551,9 @@ func boolStr(v bool) string {
 }
 
 func parseFloatSafe(s string) float64 {
-	var f float64
-	fmt.Sscanf(s, "%f", &f)
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
 	return f
 }

@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -52,6 +53,9 @@ func (ps PowerSupply) IsOnline() bool {
 }
 
 func (ps PowerSupply) HasCapacity() bool {
+	if !ps.IsBattery() {
+		return false
+	}
 	_, ok := ps.Properties["POWER_SUPPLY_CAPACITY"]
 	return ok
 }
@@ -217,7 +221,11 @@ func (ps PowerSupply) WearLevel() float64 {
 	if full <= 0 || design <= 0 {
 		return 0
 	}
-	return math.Round((1-full/design)*100*10) / 10
+	wear := math.Round((1-full/design)*100*10) / 10
+	if wear < 0 {
+		return 0
+	}
+	return wear
 }
 
 func (ps PowerSupply) TimeToEmpty() string {
@@ -283,7 +291,7 @@ func ScanPowerSupplies() []PowerSupply {
 func readUevent(path string) map[string]string {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil
+		return map[string]string{}
 	}
 	props := make(map[string]string)
 	for _, line := range strings.Split(string(data), "\n") {
@@ -312,16 +320,6 @@ func SortedProps(props map[string]string) []string {
 	for k := range props {
 		keys = append(keys, k)
 	}
-	sortKeys(keys)
+	sort.Strings(keys)
 	return keys
-}
-
-func sortKeys(keys []string) {
-	for i := 0; i < len(keys); i++ {
-		for j := i + 1; j < len(keys); j++ {
-			if keys[i] > keys[j] {
-				keys[i], keys[j] = keys[j], keys[i]
-			}
-		}
-	}
 }

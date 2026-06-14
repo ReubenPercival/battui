@@ -9,16 +9,6 @@ import (
 )
 
 var (
-	appStyle = lipgloss.NewStyle().
-			PaddingLeft(1).
-			PaddingRight(1)
-
-	headerStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#ffffff")).
-			Background(lipgloss.Color("#1a1b26")).
-			Padding(0, 1)
-
 	headerBarStyle = lipgloss.NewStyle().
 			Background(lipgloss.Color("#1a1b26"))
 
@@ -39,12 +29,6 @@ var (
 				Background(lipgloss.Color("#24283b")).
 				Padding(0, 2).
 				MarginRight(1)
-
-	cardBorderStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#3b4261")).
-			Padding(0, 1).
-			MarginBottom(1)
 
 	cardTitleStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -106,47 +90,6 @@ func statusColor(status string) lipgloss.Color {
 	}
 }
 
-func RenderGauge(pct float64, width int) string {
-	if width < 2 {
-		return ""
-	}
-
-	pct = math.Max(0, math.Min(100, pct))
-
-	filled := int(math.Round(float64(width) * pct / 100))
-	if filled > width {
-		filled = width
-	}
-	empty := width - filled
-
-	color := capacityColor(pct)
-	pctStr := fmt.Sprintf(" %3.0f%% ", pct)
-	pctLen := len(pctStr)
-
-	filledPart := strings.Repeat("█", filled)
-	if filled < pctLen+2 && filled > 0 {
-		filledPart = strings.Repeat("█", filled-1) + "░"
-	}
-
-	gauge := filledPart + strings.Repeat("░", empty)
-
-	if filled >= pctLen+2 {
-		insertAt := filled - pctLen - 1
-		if insertAt < 0 {
-			insertAt = 0
-		}
-		gauge = gauge[:insertAt] + pctStr + gauge[insertAt+pctLen:]
-	} else {
-		gauge = gauge + " " + fmt.Sprintf("%.0f%%", pct)
-	}
-
-	return lipgloss.NewStyle().
-		Foreground(color).
-		Background(lipgloss.Color("#1a1b26")).
-		Width(width + 5).
-		Render(gauge)
-}
-
 func RenderBar(pct float64, width int) string {
 	if width < 2 {
 		return ""
@@ -159,8 +102,6 @@ func RenderBar(pct float64, width int) string {
 	empty := width - filled
 
 	color := capacityColor(pct)
-	fg := lipgloss.Color("#ffffff")
-	bg := lipgloss.Color("#1a1b26")
 
 	fillChar := "━"
 	emptyChar := "─"
@@ -174,8 +115,6 @@ func RenderBar(pct float64, width int) string {
 		Foreground(lipgloss.Color("#3b4261")).
 		Render(strings.Repeat(emptyChar, empty))
 
-	_ = fg
-	_ = bg
 	return filledStr + emptyStr
 }
 

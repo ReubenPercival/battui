@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -19,7 +20,7 @@ const (
 	tabCount
 )
 
-type errMsg struct{ err error }
+const pollInterval = 2 * time.Second
 
 type pollMsg struct{}
 
@@ -29,7 +30,6 @@ type model struct {
 	activeTab   tab
 	width       int
 	height      int
-	err         error
 	loading     bool
 	lastUpdated time.Time
 	spinner     spinner.Model
@@ -151,7 +151,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		m.lastUpdated = time.Now()
 		m = m.updateViewport()
-		return m, tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+		return m, tea.Tick(pollInterval, func(t time.Time) tea.Msg {
 			return pollMsg{}
 		})
 
@@ -160,10 +160,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
-	case errMsg:
-		m.err = msg.err
-		m.loading = false
-		return m, nil
 	}
 
 	var cmd tea.Cmd
@@ -231,16 +227,14 @@ func (m model) renderHeader() string {
 	right := lipgloss.JoinHorizontal(lipgloss.Center, updated)
 
 	fill := max(0, m.width-lipgloss.Width(left)-lipgloss.Width(right)-4)
-	padding := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#3b4261")).
-		Render(stringsRepeat("─", fill))
+	padding := dimStyle.Render(strings.Repeat("─", fill))
 
 	bar := lipgloss.JoinHorizontal(lipgloss.Center, left, padding, right)
 	return headerBarStyle.Width(m.width).Render(bar)
 }
 
 func (m model) renderTabs() string {
-	names := []string{" Overview ", " Details ", " All Props "}
+	names := []string{"Overview", "Details", "All Props"}
 	var tabs []string
 	for i, name := range names {
 		if tab(i) == m.activeTab {
@@ -283,7 +277,7 @@ func (m model) renderFooter() string {
 	}
 
 	fill := max(0, m.width-lipgloss.Width(bindings)-lipgloss.Width(right)-4)
-	padding := stringsRepeat(" ", fill)
+	padding := strings.Repeat(" ", fill)
 
 	bar := lipgloss.JoinHorizontal(lipgloss.Center, bindings, padding, right)
 	return footerStyle.Width(m.width).Render(bar)
@@ -307,13 +301,4 @@ func clamp(v, lo, hi int) int {
 	return max(lo, min(v, hi))
 }
 
-func stringsRepeat(s string, count int) string {
-	if count <= 0 {
-		return ""
-	}
-	result := ""
-	for i := 0; i < count; i++ {
-		result += s
-	}
-	return result
-}
+
