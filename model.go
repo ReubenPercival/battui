@@ -120,12 +120,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.GotoTop()
 			return m, nil
 		case "j", "down":
-			if m.activeTab == tabOverview {
-				m.selected = min(m.selected+1, max(0, len(m.supplies)-1))
+			if m.activeTab == tabOverview && len(m.supplies) > 0 {
+				m.selected = min(m.selected+1, len(m.supplies)-1)
 			}
 			return m, nil
 		case "k", "up":
-			if m.activeTab == tabOverview {
+			if m.activeTab == tabOverview && len(m.supplies) > 0 {
 				m.selected = max(m.selected-1, 0)
 			}
 			return m, nil
@@ -133,13 +133,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = true
 			return m, func() tea.Msg { return pollMsg{} }
 		case "g":
-			if m.activeTab == tabOverview {
+			if m.activeTab == tabOverview && len(m.supplies) > 0 {
 				m.selected = 0
 			}
 			return m, nil
 		case "G":
-			if m.activeTab == tabOverview {
-				m.selected = max(0, len(m.supplies)-1)
+			if m.activeTab == tabOverview && len(m.supplies) > 0 {
+				m.selected = len(m.supplies) - 1
 			}
 			return m, nil
 		}
@@ -147,7 +147,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case pollMsg:
 		supplies := ScanPowerSupplies()
 		m.supplies = supplies
-		m.selected = clamp(m.selected, 0, max(0, len(supplies)-1))
+		if len(supplies) > 0 {
+			m.selected = clamp(m.selected, 0, len(supplies)-1)
+		} else {
+			m.selected = -1
+		}
 		m.loading = false
 		m.lastUpdated = time.Now()
 		m = m.updateViewport()
